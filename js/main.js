@@ -6,6 +6,7 @@ var bbox;
 var i_share = 0, n_share = 1, i_delta = 0.0;
  
 init();
+
 animate();
 
 // Sets up the scene.
@@ -54,12 +55,14 @@ function init()
     alight.position.set(-100.0, 200.0, 100.0);
     scene.add(alight);
 
-    //var directionalLight = new THREE.DirectionalLight( 0xffeedd );
-      //          directionalLight.position.set( 0, 5, 0 );
-//                directionalLight.castShadow = true;
-  //              scene.add( directionalLight );
+    /*var directionalLight = new THREE.DirectionalLight( 0xffeedd );
+                directionalLight.position.set( 0, 5, 0 );
+                directionalLight.castShadow = true;
+                scene.add( directionalLight );*/
+    var light = new THREE.PointLight( 0x00DDDD, 1, 100 );
+	light.position.set( 1, 1, 1 );
+	scene.add( light );
 
-    
     // Load in the mesh and add it to the scene.
     var sawBlade_texPath = 'assets/sawblade.jpg';
     var sawBlade_objPath = 'assets/sawblade.obj';
@@ -73,33 +76,28 @@ function init()
     var slab_objPath = 'assets/slab.obj';
     OBJMesh(slab_objPath, slab_texPath, "slab");
     
-    var geometry = new THREE.BoxGeometry( 1, 1, 1 );
-    var material = new THREE.MeshBasicMaterial( { color: 0x00ff00 } );
-    var cube = new THREE.Mesh( geometry, material );
-    scene.add( cube );
-    /* //Stanford Bunny
+     //Stanford Bunny
     var bunny_texPath = 'assets/rocky.jpg';
     var bunny_objPath = 'assets/stanford_bunny.obj';
     OBJMesh(bunny_objPath, bunny_texPath, "bunny");
-    */
+    
 
-    /* //Sphere
+    //Sphere
     var sphere_texPath = 'assets/rocky.jpg';
     var sphere_objPath = 'assets/sphere.obj';
     OBJMesh(sphere_objPath, sphere_texPath, "sphere");
-    */
 
-    /* //Cube
+     //Cube
     var cube_texPath = 'assets/rocky.jpg';
     var cube_objPath = 'assets/cube.obj';
     OBJMesh(cube_objPath, cube_texPath, "cube");
-    */
     
-    /* //Cone
+    //Cone
     var cone_texPath = 'assets/rocky.jpg';
     var cone_objPath = 'assets/cone.obj';
     OBJMesh(cone_objPath, cone_texPath, "cone");
-    */
+    
+    
     
     // Add OrbitControls so that we can pan around with the mouse.
     controls = new THREE.OrbitControls(camera, renderer.domElement);
@@ -149,13 +147,12 @@ function postProcess()
 
     translate(asset, 0,-1.5,0);
     rotate(asset, new THREE.Vector3(0,0,1), -9* delta); //rotate sawblade
-    translate(asset, 0,1.5,0);
-    
-    
+    translate(asset, 0,1.5,0);       
+    setPositions();
 }
 
 
-function OBJMesh(objpath, texpath, objName)
+function OBJMesh(objpath, texpath, objName/*, objStartPos*/)
 {
     var texture = new THREE.TextureLoader( loadingManager ).load(texpath, onLoad, onProgress, onError);
     var loader  = new THREE.OBJLoader( loadingManager ).load(objpath,  
@@ -175,10 +172,11 @@ function OBJMesh(objpath, texpath, objName)
 
             object.name = objName;
             //if(objName=="sawblade")
-              //  translate(object, 0,1.5,0); //move it up to slab
+              // translate(object, 0,1.5,0); //move it up to slab
     
             scene.add( object );
             onLoad( object );
+            
         },
     onProgress, onError);
 }
@@ -218,4 +216,13 @@ function putTextExt(dividstr, textStr) //does not need init
 {
     var text = document.getElementById(dividstr);
     text.innerHTML = textStr;
+}
+function setPositions(){
+	scene.getObjectByName("bunny").position.set(-2, 0, -1);
+	scene.getObjectByName("cube").position.set(-2, -0.4, 0.05);
+	scene.getObjectByName("cone").position.set(-1.5, 0, 1.4);
+	scene.getObjectByName("sphere").position.set(-0.2, 0, 0.4);
+
+	/*var con = scene.getObjectByName("cone");
+    directionalLight.target.position.set(con.position.x,con.position.y,con.position.z);*/
 }
