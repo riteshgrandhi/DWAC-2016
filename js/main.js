@@ -6,7 +6,6 @@ var bbox;
 var i_share = 0, n_share = 1, i_delta = 0.0;
  
 init();
-
 animate();
 
 // Sets up the scene.
@@ -29,16 +28,17 @@ function init()
     renderer = new THREE.WebGLRenderer({antialias:true});
     renderer.setSize(WIDTH, HEIGHT);
     // Set the background color of the scene.
-    renderer.setClearColor(0x333333, 1);
+    renderer.setClearColor(0x111111, 1);
     //document.body.appendChild(renderer.domElement); //in case rendering in body
     container.appendChild( renderer.domElement );
 
     // Create a camera, zoom it out from the model a bit, and add it to the scene.
     camera = new THREE.PerspectiveCamera(45.0, WIDTH / HEIGHT, 0.01, 1000);
-    camera.position.set(-2, 2, -5);
-    //camera.lookAt(new THREE.Vector3(5,0,0));
+    camera.position.set(-7, 2, -10);
+    camera.lookAt(new THREE.Vector3(5,0,0));
     scene.add(camera);
-  
+    renderer.shadowMap.enabled = true;
+
     // Create an event listener that resizes the renderer with the browser window.
     window.addEventListener('resize',
         function ()
@@ -49,20 +49,9 @@ function init()
             camera.updateProjectionMatrix();
         }
     );
- 
-    // Create a light, set its position, and add it to the scene.
-    var alight = new THREE.AmbientLight(0xFFFFFF);
-    alight.position.set(-100.0, 200.0, 100.0);
-    scene.add(alight);
-
-    /*var directionalLight = new THREE.DirectionalLight( 0xffeedd );
-                directionalLight.position.set( 0, 5, 0 );
-                directionalLight.castShadow = true;
-                scene.add( directionalLight );*/
-    var light = new THREE.PointLight( 0x00DDDD, 1, 100 );
-	light.position.set( 1, 1, 1 );
-	scene.add( light );
-
+ 	
+ 	initlighting();
+    
     // Load in the mesh and add it to the scene.
     var sawBlade_texPath = 'assets/sawblade.jpg';
     var sawBlade_objPath = 'assets/sawblade.obj';
@@ -96,7 +85,6 @@ function init()
     var cone_texPath = 'assets/rocky.jpg';
     var cone_objPath = 'assets/cone.obj';
     OBJMesh(cone_objPath, cone_texPath, "cone");
-    
     
     
     // Add OrbitControls so that we can pan around with the mouse.
@@ -163,15 +151,26 @@ function OBJMesh(objpath, texpath, objName/*, objStartPos*/)
                 {
                     if(child instanceof THREE.Mesh)
                     {
+                    	child.material = new THREE.MeshPhongMaterial( { color: 0xffffff, shading: THREE.FlatShading } );
                         child.material.map = texture;
                         child.material.needsUpdate = true;
+                        child.recieveshadow=true;
+                        child.castShadow=true;
                     }
-    
+    				//child.material=new THREE.MeshPhongMaterial( { color: 0xffffff, shading: THREE.SmoothShading } );
                 }
             );
 
             object.name = objName;
-            //if(objName=="sawblade")
+            /*object.material=new THREE.MeshPhongMaterial( /*{ color: 0xffffff, shading: THREE.SmoothShading } );
+            object.recieveshadow=true;*/
+            if(objName=="sawblade")
+            	object.material=new THREE.MeshPhongMaterial( { color: 0xffffff, shading: THREE.SmoothShading } );
+            if(objName=="ground"){
+            	object.recieveshadow=true;
+            	object.castShadow=false;
+            }
+
               // translate(object, 0,1.5,0); //move it up to slab
     
             scene.add( object );
@@ -225,4 +224,37 @@ function setPositions(){
 
 	/*var con = scene.getObjectByName("cone");
     directionalLight.target.position.set(con.position.x,con.position.y,con.position.z);*/
+}
+function initlighting(){
+	// Create a light, set its position, and add it to the scene.
+    var alight = new THREE.AmbientLight(0x111111);
+    alight.position.set(-100.0, 200.0, 100.0);
+    scene.add(alight);
+
+    /*var directionalLight = new THREE.DirectionalLight( 0xffeedd );
+                directionalLight.position.set( 0, 5, 0 );
+                directionalLight.castShadow = true;
+                scene.add( directionalLight );*/
+    var light1 = new THREE.PointLight( 0xA24444, 0.6, 1000 );
+	light1.position.set( 1, 5, -0.3 );
+	scene.add( light1 );
+
+	var light2 = new THREE.PointLight( 0x4444A2, 0.25, 500 );
+	light2.position.set( -5, 0, 5 );
+	scene.add( light2 );
+	// white spotlight shining from the side, casting shadow
+
+	var spotLight = new THREE.SpotLight( 0xffffff,2 );
+	spotLight.position.set( 3, 3, -3 );
+
+	spotLight.castShadow = true;
+
+	spotLight.shadow.mapSize.width = 1024;
+	spotLight.shadow.mapSize.height = 1024;
+
+	spotLight.shadow.camera.near = 500;
+	spotLight.shadow.camera.far = 4000;
+	spotLight.shadow.camera.fov = 40;
+
+	scene.add( spotLight );
 }
