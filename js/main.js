@@ -4,7 +4,29 @@ var scene, camera, renderer, container, loadingManager;
 var bbox;
 // Transfer global variables
 var i_share = 0, n_share = 1, i_delta = 0.0;
- 
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+// class for spark object - preliminary , needs a lot of changes
+function Spark() {
+
+    this.velVector = [0, 0, 0];
+    this.type = 'Spark';
+
+    this.geometry = new THREE.SphereGeometry( 0.5 , 32, 32 );
+    this.material = new THREE.MeshLambertMaterial( { color: 0xffff00 } );
+
+    THREE.Mesh.call( this, this.geometry, this.material );
+
+    this.isGoingUp = false;
+    this.isMoving = false;
+}
+Spark.prototype = Object.create( THREE.Mesh.prototype );
+Spark.prototype.constructor = Spark;
+Spark.prototype.getMesh = function() {
+    return this.mesh;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////
 init();
 animate();
 
@@ -13,7 +35,7 @@ function init()
 {
     // Create the scene and set the scene size.
     scene = new THREE.Scene();
-    
+    scene.updateMatrixWorld(true);
     // keep a loading manager
     loadingManager = new THREE.LoadingManager();
 
@@ -43,10 +65,10 @@ function init()
     window.addEventListener('resize',
         function ()
         {
-            var WIDTH = window.innerWidth, HEIGHT = window.innerHeight;
-            renderer.setSize(WIDTH, HEIGHT);
-            camera.aspect = WIDTH / HEIGHT;
-            camera.updateProjectionMatrix();
+            // var WIDTH = window.innerWidth, HEIGHT = window.innerHeight;
+            // renderer.setSize(WIDTH, HEIGHT);
+            // camera.aspect = WIDTH / HEIGHT;
+            // camera.updateProjectionMatrix();
         }
     );
  	
@@ -75,6 +97,17 @@ function init()
     var sphere_texPath = 'assets/rocky.jpg';
     var sphere_objPath = 'assets/sphere.obj';
     OBJMesh(sphere_objPath, sphere_texPath, "sphere");
+
+
+    //Ball
+    var ball = new Spark();
+    ball.name = 'ball';
+    ball.isMoving = true;
+    scene.add(ball);
+    
+    ball.position.set(-2, 4, 2);
+    ball.scale.set( 0.3, 0.3, 0.3 );
+
 
      //Cube
     var cube_texPath = 'assets/rocky.jpg';
@@ -105,12 +138,47 @@ function init()
     var delta = clock.getDelta();
 }
 
+
 function animate()
 {
     requestAnimationFrame(animate);
     renderer.render(scene, camera);
-    controls.update();
     postProcess();
+    var ball = scene.getObjectByName("ball");
+    
+    var position = new THREE.Vector3();
+    position.getPositionFromMatrix( ball.matrixWorld );
+    
+    console.log(position.y);
+
+
+    // can be simplified????
+    // constants are more or less arbitrary. need to fix that.
+    if(ball.isMoving){
+        if(position.y > 0 && ball.isGoingUp == false){
+            ball.velVector[1] -= 0.005;
+        }
+        if(position.y <= 0.5 && ball.isGoingUp == false){
+            ball.velVector[1] = -ball.velVector[1]*0.75;
+
+            if(ball.velVector[1] < 0.05)
+                ball.isMoving = false;
+
+            ball.isGoingUp = true;
+        }
+        if(position.y > 0 && ball.isGoingUp == true){
+            ball.velVector[1] -= 0.005;
+            if(ball.velVector[1] <= 0)
+                ball.isGoingUp = false;
+        }
+    }
+    else{
+        ball.velVector[1] = 0;
+    }
+
+    controls.update();
+    //gravity for now
+    ball.position.set(position.x, position.y + ball.velVector[1], position.z);
 }
 
 function rotate(object, axis, radians)
