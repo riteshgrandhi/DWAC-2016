@@ -2,30 +2,47 @@
 var scene, camera, renderer, container, loadingManager;
 // Set up avatar global variables
 var bbox;
+//Master Gravity
+var gravity = -20;
 // Transfer global variables
 var i_share = 0, n_share = 1, i_delta = 0.0;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 // class for spark object - preliminary , needs a lot of changes
 function Spark() {
-
-    this.velVector = [0, 0, 0];
+	this.elasticity = 0.8;
+	this.maxbounces = 4;
+    this.velVector = new THREE.Vector3(0, 0, 0);
     this.type = 'Spark';
 
-    this.geometry = new THREE.SphereGeometry( 0.5 , 32, 32 );
+    this.geometry = new THREE.SphereGeometry( 0.5 , 6, 4 );
     this.material = new THREE.MeshLambertMaterial( { color: 0xffff00 } );
-
+    //this.mesh = new THREE.Mesh(geometry,material);
     THREE.Mesh.call( this, this.geometry, this.material );
 
     this.isGoingUp = false;
     this.isMoving = false;
 }
-Spark.prototype = Object.create( THREE.Mesh.prototype );
-Spark.prototype.constructor = Spark;
-Spark.prototype.getMesh = function() {
-    return this.mesh;
-}
-
+	Spark.prototype = Object.create( THREE.Mesh.prototype );
+	Spark.prototype.constructor = Spark;
+	Spark.prototype.getMesh = function() {
+    	return this;
+	}
+	Spark.prototype.updatePos = function(grav,delta){
+		var particle = this.getMesh();
+		this.velVector.x = this.velVector.x + 0;		
+		this.velVector.y = this.velVector.y + 0.5*grav*delta;
+		this.velVector.z = this.velVector.z + 0;
+		//this.velVector = new THREE.Vector3 (vdx,vdy,vdz);
+		//console.log(velVector.y);
+		var p=particle.position;
+		particle.position.set(p.x + this.velVector.x * delta,
+			p.y + this.velVector.y*delta,
+			p.z + this.velVector.x*delta);
+	}
+	Spark.prototype.onCollision = function(collDir){
+		this.velVector.y *= -this.elasticity;
+	}
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 init();
 animate();
@@ -105,7 +122,7 @@ function init()
     ball.isMoving = true;
     scene.add(ball);
     
-    ball.position.set(-2, 4, 2);
+    ball.position.set(-2, 10, 2);
     ball.scale.set( 0.3, 0.3, 0.3 );
 
 
@@ -144,17 +161,17 @@ function animate()
     requestAnimationFrame(animate);
     renderer.render(scene, camera);
     postProcess();
-    var ball = scene.getObjectByName("ball");
+    /*var ball = scene.getObjectByName("ball");
     
     var position = new THREE.Vector3();
     position.getPositionFromMatrix( ball.matrixWorld );
     
-    console.log(position.y);
+    console.log(position.y);*/
 
 
     // can be simplified????
     // constants are more or less arbitrary. need to fix that.
-    if(ball.isMoving){
+    /*if(ball.isMoving){
         if(position.y > 0 && ball.isGoingUp == false){
             ball.velVector[1] -= 0.005;
         }
@@ -174,11 +191,12 @@ function animate()
     }
     else{
         ball.velVector[1] = 0;
-    }
+    }*/
 
-    controls.update();
     //gravity for now
-    ball.position.set(position.x, position.y + ball.velVector[1], position.z);
+    //ball.position.set(position.x, position.y + ball.velVector[1], position.z);
+    controls.update();
+
 }
 
 function rotate(object, axis, radians)
@@ -205,6 +223,14 @@ function postProcess()
     rotate(asset, new THREE.Vector3(0,0,1), -9* delta); //rotate sawblade
     translate(asset, 0,1.5,0);       
     setPositions();
+
+    var ball = scene.getObjectByName("ball");
+    ball.updatePos(gravity,delta);
+    if(ball.position.y<=0 && ball.maxbounces-- >=0){
+    	ball.onCollision(new THREE.Vector3(0,1,0));
+    	console.log("bounced!");
+    	//break;
+    }
 }
 
 
