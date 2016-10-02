@@ -11,9 +11,10 @@ var i_share = 0, n_share = 1, i_delta = 0.0;
 // class for spark object - preliminary , needs a lot of changes
 function Spark() {
 	this.elasticity = 1;
-	this.maxbounces = 10;
+	this.maxbounces = 4;
     this.velVector = new THREE.Vector3(-2, 8, 0);
     this.type = 'Spark';
+    this.creationTime = 0;
 
     this.geometry = new THREE.SphereGeometry( 0.5 , 6, 4 );
     this.material = new THREE.MeshBasicMaterial( { color: 0xffffff } );
@@ -29,9 +30,17 @@ function Spark() {
     	return this;
 	}
 	Spark.prototype.updatePos = function(grav,delta){
-		this.velVector.x = this.velVector.x - 0.05;		
+        if(this.creationTime == 0)
+            this.creationTime = Date.now();
+
+        else if(Date.now() - this.creationTime > 10000){
+            scene.remove(this);
+            return;
+        }
+
+		// this.velVector.x = this.velVector.x - 0;		
 		this.velVector.y = this.velVector.y + 0.5*grav*delta;
-		this.velVector.z = this.velVector.z + 0;
+		// this.velVector.z = this.velVector.z + 0; ///?????????????????? why do we need this?
 
 		var p=this.position;
 		this.position.set(p.x + this.velVector.x * delta,
@@ -65,7 +74,7 @@ function Spark() {
 	Spark.prototype.onCollision = function(collNor){
 		//collNor.normalize();
 		if(this.maxbounces-- == 0){
-			//scene.remove(this);
+			// scene.remove(this);
 			console.log("Done");
 		}
 		var mulConst=-2 * this.velVector.dot(collNor);
@@ -74,6 +83,60 @@ function Spark() {
 		this.velVector = addPart.multiplyScalar(this.elasticity);
 	}
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+function SparkGenerator() {
+    this.type = 'SparkGenerator';
+    this.sparkCounter = 0;
+    this.minID = 0;
+
+    this.geometry = new THREE.SphereGeometry(0 , 0, 0);
+    this.material = new THREE.MeshBasicMaterial( { color: 0x000000 } );
+    THREE.Mesh.call( this, this.geometry, this.material);
+
+    this.generateSpark = function(orientation) {
+            var newSpark = new Spark();
+            newSpark.name = 'newSpark' + this.sparkCounter++;
+            newSpark.isMoving = true;
+            
+            newSpark.velVector.x = orientation.x * 0.3;
+            newSpark.velVector.y = orientation.y * 0.3;
+            newSpark.velVector.z = orientation.z * 0.3;
+
+            scene.add(newSpark);
+            
+            var position = new THREE.Vector3();
+            position.getPositionFromMatrix(this.matrixWorld );
+
+            newSpark.position.set(position.x, position.y, position.z);
+            newSpark.scale.set( 0.03, 0.03, 0.03 );
+
+            var delta = clock.getDelta();
+            for (var i = this.minID; i < this.sparkCounter; i++) {
+                var ball = scene.getObjectByName('newSpark' + i);
+                if(!ball){
+                    this.minID = i;
+                    continue;
+                }
+                ball.updatePos(gravity,delta);
+                ball.checkRayCol();
+            }
+
+            console.log(newSpark);
+        // console.log(position);
+        // console.log("gend spark");
+
+    };
+
+}
+SparkGenerator.prototype = Object.create( THREE.Mesh.prototype );
+SparkGenerator.prototype.constructor = SparkGenerator;
+SparkGenerator.prototype.getMesh = function() {
+    return this;
+}
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+
 init();
 animate();
 
@@ -152,13 +215,19 @@ function init()
 
 
     //Ball
-    var ball = new Spark();
-    ball.name = 'ball';
-    ball.isMoving = true;
-    scene.add(ball);
+    // var ball = new Spark();
+    // ball.name = 'ball';
+    // ball.isMoving = true;
+    // scene.add(ball);
+
+
+    // Generator
+    var generator = new SparkGenerator();
+    generator.name = 'generator';
+    scene.add(generator);
     
-    ball.position.set(0, 0.2, 0);
-    ball.scale.set( 0.03, 0.03, 0.03 );
+    generator.position.set(2, 2, 2);
+    generator.scale.set( 0, 0, 0 );
 
 
      //Cube
@@ -224,9 +293,15 @@ function postProcess()
     translate(asset, 0,1.5,0);       
     setPositions();
 
-    var ball = scene.getObjectByName("ball");
-    ball.updatePos(gravity,delta);
-    ball.checkRayCol();
+    // var ball = scene.getObjectByName("ball");
+    // ball.updatePos(gravity,delta);
+    // ball.checkRayCol();
+
+    var gen = scene.getObjectByName("generator");
+    var orientation = new THREE.Vector3(1,1,1);
+    if(Math.random() > 0.5){
+        gen.generateSpark(orientation);
+    }
     /*if(ball.position.y<=0 && ball.maxbounces-- >=0){
     	//ball.onCollision(new THREE.Vector3(0,1,0));
     	console.log("bounced!");
