@@ -3,7 +3,7 @@ var scene, camera, renderer, container, loadingManager;
 // Set up avatar global variables
 var bbox;
 //Master Gravity
-var gravity = -20;
+var gravity = -25;
 // Transfer global variables
 var i_share = 0, n_share = 1, i_delta = 0.0;
 
@@ -12,11 +12,17 @@ var i_share = 0, n_share = 1, i_delta = 0.0;
 function Spark() {
 	this.elasticity = 0.8;
 	this.maxbounces = 4;
-    this.velVector = new THREE.Vector3(0, 0, 0);
+    this.velVector = new THREE.Vector3(-2, 8, 0);
     this.type = 'Spark';
 
+	//this.l=this.velVector.length() ;
+	//this.norma= new THREE.Vector3( this.velVector.x/this.l, this.velVector.y/this.l, this.velVector.z/this.l);
+
+    //this.raycaster = new THREE.Raycaster(this.position, this.norma);
+    //this.raycaster.ray.length=2;
+
     this.geometry = new THREE.SphereGeometry( 0.5 , 6, 4 );
-    this.material = new THREE.MeshLambertMaterial( { color: 0xffff00 } );
+    this.material = new THREE.MeshBasicMaterial( { color: 0xffffff } );
     //this.mesh = new THREE.Mesh(geometry,material);
     THREE.Mesh.call( this, this.geometry, this.material );
 
@@ -29,16 +35,44 @@ function Spark() {
     	return this;
 	}
 	Spark.prototype.updatePos = function(grav,delta){
-		var particle = this.getMesh();
-		this.velVector.x = this.velVector.x + 0;		
+		//var particle = this.getMesh();
+		this.velVector.x = this.velVector.x - 0.05;		
 		this.velVector.y = this.velVector.y + 0.5*grav*delta;
 		this.velVector.z = this.velVector.z + 0;
 		//this.velVector = new THREE.Vector3 (vdx,vdy,vdz);
 		//console.log(velVector.y);
-		var p=particle.position;
-		particle.position.set(p.x + this.velVector.x * delta,
+		var p=this.position;
+		this.position.set(p.x + this.velVector.x * delta,
 			p.y + this.velVector.y*delta,
-			p.z + this.velVector.x*delta);
+			p.z + this.velVector.z*delta);
+	}
+	Spark.prototype.checkRayCol = function(){
+		
+		var l=this.velVector.length() ;
+
+		var normalizedVel= new THREE.Vector3( this.velVector.x/l, this.velVector.y/l, this.velVector.z/l);
+		var rayOrigin=this.position; //+ new THREE.Vector3(0,-0.01,0); //new THREE.Vector3(0,1,0);
+		var rayDir=normalizedVel;
+		//var rayDir=new THREE.Vector3(0,-1,0);
+
+
+	    var raycaster = new THREE.Raycaster(rayOrigin,rayDir);
+	    raycaster.far=0.1;
+
+		scene.updateMatrixWorld();
+
+		var intersects = raycaster.intersectObjects(scene.children,true);
+		if(intersects[0]){
+			console.log(intersects[0].face);
+			//intersects[0].object.material.color=0x00FF00;
+			this.onCollision(intersects[0].face.normal);
+		}
+
+		//scene.add( new THREE.ArrowHelper(rayDir, rayOrigin, 0.1, 0x00FF00));
+
+		
+
+		scene.remove(this.raycaster);
 	}
 	Spark.prototype.onCollision = function(collDir){
 		this.velVector.y *= -this.elasticity;
@@ -50,12 +84,15 @@ animate();
 // Sets up the scene.
 function init()
 {
+	
+
     // Create the scene and set the scene size.
     scene = new THREE.Scene();
     scene.updateMatrixWorld(true);
     // keep a loading manager
     loadingManager = new THREE.LoadingManager();
 
+    //projector = new THREE.Projector();
     // Get container information
     container = document.createElement( 'div' );
     document.body.appendChild( container ); 
@@ -109,6 +146,8 @@ function init()
     var bunny_objPath = 'assets/stanford_bunny.obj';
     OBJMesh(bunny_objPath, bunny_texPath, "bunny");
     
+    //objects Array
+	var sceneObjects=[scene];
 
     //Sphere
     var sphere_texPath = 'assets/rocky.jpg';
@@ -122,8 +161,8 @@ function init()
     ball.isMoving = true;
     scene.add(ball);
     
-    ball.position.set(-2, 10, 2);
-    ball.scale.set( 0.3, 0.3, 0.3 );
+    ball.position.set(0, 0.2, 0);
+    ball.scale.set( 0.03, 0.03, 0.03 );
 
 
      //Cube
@@ -161,42 +200,7 @@ function animate()
     requestAnimationFrame(animate);
     renderer.render(scene, camera);
     postProcess();
-    /*var ball = scene.getObjectByName("ball");
-    
-    var position = new THREE.Vector3();
-    position.getPositionFromMatrix( ball.matrixWorld );
-    
-    console.log(position.y);*/
-
-
-    // can be simplified????
-    // constants are more or less arbitrary. need to fix that.
-    /*if(ball.isMoving){
-        if(position.y > 0 && ball.isGoingUp == false){
-            ball.velVector[1] -= 0.005;
-        }
-        if(position.y <= 0.5 && ball.isGoingUp == false){
-            ball.velVector[1] = -ball.velVector[1]*0.75;
-
-            if(ball.velVector[1] < 0.05)
-                ball.isMoving = false;
-
-            ball.isGoingUp = true;
-        }
-        if(position.y > 0 && ball.isGoingUp == true){
-            ball.velVector[1] -= 0.005;
-            if(ball.velVector[1] <= 0)
-                ball.isGoingUp = false;
-        }
-    }
-    else{
-        ball.velVector[1] = 0;
-    }*/
-
-    //gravity for now
-    //ball.position.set(position.x, position.y + ball.velVector[1], position.z);
     controls.update();
-
 }
 
 function rotate(object, axis, radians)
@@ -226,8 +230,9 @@ function postProcess()
 
     var ball = scene.getObjectByName("ball");
     ball.updatePos(gravity,delta);
+    ball.checkRayCol();
     if(ball.position.y<=0 && ball.maxbounces-- >=0){
-    	ball.onCollision(new THREE.Vector3(0,1,0));
+    	//ball.onCollision(new THREE.Vector3(0,1,0));
     	console.log("bounced!");
     	//break;
     }
@@ -250,6 +255,7 @@ function OBJMesh(objpath, texpath, objName/*, objStartPos*/)
                         child.material.needsUpdate = true;
                         child.recieveshadow=true;
                         child.castShadow=true;
+                        //sceneObjects.push(child.object );
                     }
     				//child.material=new THREE.MeshPhongMaterial( { color: 0xffffff, shading: THREE.SmoothShading } );
                 }
