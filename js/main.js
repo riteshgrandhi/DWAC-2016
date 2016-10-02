@@ -19,10 +19,13 @@ function Spark() {
 	this.colorSpeed = -0.015;
 	this.targetDir = new THREE.Vector3(1,0,0);
 	
-    this.velVector = new THREE.Vector3(-4, 5, 0);
+    this.velVector = new THREE.Vector3(-3.5, 5, 0);
 
     this.type = 'Spark';
     this.creationTime = 0;
+
+    /*this.sparkLight = new THREE.PointLight( 0xffffff, 10, 1);
+	scene.add( this.sparkLight );*/
 
     this.geometry = new THREE.SphereGeometry( 0.5 , 5, 3 );
     this.material = new THREE.MeshBasicMaterial( { color: "rgb(255, 239, 224)" } );
@@ -62,6 +65,7 @@ function Spark() {
 		this.position.set(p.x + this.velVector.x * delta,
 			p.y + this.velVector.y*delta,
 			p.z + this.velVector.z*delta);
+		//this.sparkLight.position.set(this.position.x,this.position.y,this.position.z);
 	}
 	Spark.prototype.checkRayCol = function(){
 		
@@ -72,7 +76,7 @@ function Spark() {
 		var rayDir=normalizedVel;
 		//this.rotation.setFromQuaternion(new THREE.Quaternion(normalizedVel.x,normalizedVel.y,normalizedVel.z,0) );
 		this.rotation.setFromVector3(normalizedVel);
-		this.scale.set(0.013 * l, 0.01, 0.01);
+		this.scale.set(0.02 * l, 0.01, 0.01);
 		//var rayDir=new THREE.Vector3(0,-1,0);
 
 	    var raycaster = new THREE.Raycaster(rayOrigin,rayDir);
@@ -98,7 +102,7 @@ function Spark() {
 	}
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 function SparkGenerator() {
-	this.spread = new THREE.Vector3(2,1,2);
+	this.spread = new THREE.Vector3(2,1,1.7);
 	this.rate = 2;
     this.type = 'SparkGenerator';
     this.sparkCounter = 0;
@@ -143,8 +147,6 @@ SparkGenerator.prototype.constructor = SparkGenerator;
 SparkGenerator.prototype.getMesh = function() {
     return this;
 }
-
-
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 
 init();
@@ -153,8 +155,6 @@ animate();
 // Sets up the scene.
 function init()
 {
-	
-
     // Create the scene and set the scene size.
     scene = new THREE.Scene();
     scene.updateMatrixWorld(true);
@@ -297,27 +297,11 @@ function postProcess()
     translate(asset, 0,1.5,0);       
     setPositions();
 
-//<<<<<<< HEAD
-    // var ball = scene.getObjectByName("ball");
-    // ball.updatePos(gravity,delta);
-    // ball.checkRayCol();
-
     var gen = scene.getObjectByName("generator");
-    //var orientation = new THREE.Vector3(1,1,1);
     if(Math.random() > 0.1){
-        gen.generateSpark(/*orientation,*/delta );
+        gen.generateSpark( delta );
     }
-//=======
-    /*var ball = scene.getObjectByName("ball");
-    ball.updatePos(gravity,delta);
-    ball.checkRayCol();*/
-    
-//>>>>>>> bf0bc5206f46dc9fe3d80877754a56bd0461dd3a
-    /*if(ball.position.y<=0 && ball.maxbounces-- >=0){
-    	//ball.onCollision(new THREE.Vector3(0,1,0));
-    	console.log("bounced!");
-    	//break;
-    }*/
+
 }
 
 
@@ -344,16 +328,13 @@ function OBJMesh(objpath, texpath, objName/*, objStartPos*/)
             );
 
             object.name = objName;
-            /*object.material=new THREE.MeshPhongMaterial( /*{ color: 0xffffff, shading: THREE.SmoothShading } );
-            object.recieveshadow=true;*/
+            
             if(objName=="sawblade")
             	object.material=new THREE.MeshPhongMaterial( { color: 0xffffff, shading: THREE.SmoothShading } );
             if(objName=="ground"){
             	object.recieveshadow=true;
             	object.castShadow=false;
             }
-
-              // translate(object, 0,1.5,0); //move it up to slab
     
             scene.add( object );
             onLoad( object );
@@ -384,7 +365,6 @@ function onError( xhr )
     putText(0, "Error", 10, 10);
 }
 
-
 function putText( divid, textStr, x, y )
 {
     var text = document.getElementById("avatar_ftxt" + divid);
@@ -399,10 +379,10 @@ function putTextExt(dividstr, textStr) //does not need init
     text.innerHTML = textStr;
 }
 function setPositions(){
-	scene.getObjectByName("bunny").position.set(-2, 0, -1);
-	scene.getObjectByName("cube").position.set(-2, -0.4, 0.05);
-	scene.getObjectByName("cone").position.set(-1.5, 0, 1.4);
-	scene.getObjectByName("sphere").position.set(-0.2, 0, 0.4);
+	scene.getObjectByName("bunny").position.set(-2, 0, -1-0.5);
+	scene.getObjectByName("cube").position.set(-2, -0.4, 0.05-0.5);
+	scene.getObjectByName("cone").position.set(-1.5, 0, 1.4-0.5);
+	scene.getObjectByName("sphere").position.set(-0.2, 0, 0.4-0.5);
 
 	/*var con = scene.getObjectByName("cone");
     directionalLight.target.position.set(con.position.x,con.position.y,con.position.z);*/
