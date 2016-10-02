@@ -4,24 +4,26 @@ var scene, camera, renderer, container, loadingManager;
 var bbox;
 //Master Gravity
 var gravity = -25;
+//sparkGen
+var sGen;
 // Transfer global variables
 var i_share = 0, n_share = 1, i_delta = 0.0;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 // class for spark object - preliminary , needs a lot of changes
 function Spark() {
-	this.elasticity = 1;
+	this.elasticity = 0.8;
 	this.maxbounces = 10;
-    this.velVector = new THREE.Vector3(-2, 8, 0);
+	this.targetDir = new THREE.Vector3(1,0,1);
+	//this.initVel = new THREE.Vector3(1, 1, 1);
+    this.velVector = new THREE.Vector3(1, 10, 1);//this.initVel;
     this.type = 'Spark';
 
     this.geometry = new THREE.SphereGeometry( 0.5 , 6, 4 );
     this.material = new THREE.MeshBasicMaterial( { color: 0xffffff } );
-    //this.mesh = new THREE.Mesh(geometry,material);
     THREE.Mesh.call( this, this.geometry, this.material );
-
-    this.isGoingUp = false;
-    this.isMoving = false;
+    /*this.isGoingUp = false;
+    this.isMoving = false;*/
 }
 	Spark.prototype = Object.create( THREE.Mesh.prototype );
 	Spark.prototype.constructor = Spark;
@@ -29,9 +31,9 @@ function Spark() {
     	return this;
 	}
 	Spark.prototype.updatePos = function(grav,delta){
-		this.velVector.x = this.velVector.x - 0.05;		
+		this.velVector.x = this.velVector.x - (0.1*this.targetDir.x);		
 		this.velVector.y = this.velVector.y + 0.5*grav*delta;
-		this.velVector.z = this.velVector.z + 0;
+		this.velVector.z = this.velVector.z + (0.1*this.targetDir.z);
 
 		var p=this.position;
 		this.position.set(p.x + this.velVector.x * delta,
@@ -55,7 +57,7 @@ function Spark() {
 
 		var intersects = raycaster.intersectObjects(scene.children,true);
 		if(intersects[0]){
-			console.log(intersects[0].face);
+			//console.log(intersects[0].face);
 			//intersects[0].object.material.color=0x00FF00;
 			this.onCollision(intersects[0].face.normal);
 		}
@@ -73,6 +75,43 @@ function Spark() {
 		var addPart = dotPart.add(this.velVector);
 		this.velVector = addPart.multiplyScalar(this.elasticity);
 	}
+	Spark.prototype.setVel = function(sv){
+		//this.velVector = new THREE.Vector3(sx,sy,sz);
+		this.velVector = sv;
+	}
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+function SparkGen(){
+	this.initPosition = new THREE.Vector3(1,1,1);
+	this.angularSpread=30;
+	this.fireDirection = new THREE.Vector3(1,0,0);
+	this.num = 10;
+	this.sparkArray=[this.num];
+	this.position = this.initPosition;
+
+	this.spawnParticles();
+}
+	//Spark.prototype = Object.create( THREE.Mesh.prototype );
+	SparkGen.prototype.constructor = SparkGen;
+	SparkGen.prototype.spawnParticles = function(){
+
+		for (var i = 0; i < this.num; i++) {
+	    	//var symbol = new THREE.Object3D();
+
+	    	var item = new Spark();
+	    	item.setVel( item.velVector.multiplyScalar(3));
+	    	//item.updatePos(gravity,0.1);
+	    	//symbol.add(item);
+
+	    	this.sparkArray.push(item);
+	  	}
+	}
+	SparkGen.prototype.updateParticles = function(grav,delta){
+		for (var i = 0; i < this.num; i++) {
+			this.sparkArray[i].updatePos(grav,delta);
+			this.sparkArray[i].checkRayCol();
+		}
+	}
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 init();
 animate();
@@ -152,14 +191,16 @@ function init()
 
 
     //Ball
-    var ball = new Spark();
+    /*var ball = new Spark();
     ball.name = 'ball';
     ball.isMoving = true;
     scene.add(ball);
     
     ball.position.set(0, 0.2, 0);
-    ball.scale.set( 0.03, 0.03, 0.03 );
-
+    ball.scale.set( 0.03, 0.03, 0.03 );*/
+    sGen = new SparkGen();
+    //sGen.initPosition = new THREE.Vector3(0,1,0);
+    //sGen.spawnParticles();
 
      //Cube
     var cube_texPath = 'assets/rocky.jpg';
@@ -224,9 +265,11 @@ function postProcess()
     translate(asset, 0,1.5,0);       
     setPositions();
 
-    var ball = scene.getObjectByName("ball");
+    /*var ball = scene.getObjectByName("ball");
     ball.updatePos(gravity,delta);
-    ball.checkRayCol();
+    ball.checkRayCol();*/
+    
+    sGen.updateParticles(gravity,delta);
     /*if(ball.position.y<=0 && ball.maxbounces-- >=0){
     	//ball.onCollision(new THREE.Vector3(0,1,0));
     	console.log("bounced!");
