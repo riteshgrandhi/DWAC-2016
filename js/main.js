@@ -14,20 +14,28 @@ var i_share = 0, n_share = 1, i_delta = 0.0;
 function Spark() {
 	this.lifetime = 2;
 	this.age = 0;
-	this.elasticity = 0.6;
+	this.elasticity = 0.2;
 	this.maxbounces = 4;
-	this.colorSpeed = -0.015;
+	this.colorSpeed = -0.025;
+	this.splitCount = 1;
+	this.childSparkCounter = 0;
+	this.noSparkChilds=2;
+	this.blurFactor = 1.2;
 	this.targetDir = new THREE.Vector3(1,0,0);
-	
+
     this.velVector = new THREE.Vector3(-3.5, 5, 0);
 
     this.type = 'Spark';
     this.creationTime = 0;
 
+    this.startColor = new THREE.Color(1,0.937,0.878);
+    this.endColor = new THREE.Color(0.929,0.541,0.361);
+
     /*this.sparkLight = new THREE.PointLight( 0xffffff, 10, 1);
 	scene.add( this.sparkLight );*/
 
     this.geometry = new THREE.SphereGeometry( 0.5 , 5, 3 );
+    //this.geometry = new THREE.CylinderGeometry( 0.5, 0.5, 0.2, 5 );
     this.material = new THREE.MeshBasicMaterial( { color: "rgb(255, 239, 224)" } );
     THREE.Mesh.call( this, this.geometry, this.material );
     /*this.isGoingUp = false;
@@ -45,14 +53,19 @@ function Spark() {
         }
         this.age = Date.now() - this.creationTime;
         if(this.age > (this.lifetime * 1000)){
+        	for(var i=0;i<this.childSparkCounter;i++){
+				var childSpark = scene.getObjectByName(this.name + ":" + i);
+				//console.log(childSpark.name);
+				scene.remove(childSpark);
+			}
             scene.remove(this);
             return;
         }
 
         //color change
-        var cr = this.material.color.r + (1-0.929)*this.colorSpeed;
-        var cg = this.material.color.g + (0.937-0.541)*this.colorSpeed;
-        var cb = this.material.color.b + (0.878-0.361)*this.colorSpeed;
+        var cr = this.material.color.r + (this.startColor.r-this.endColor.r)*this.colorSpeed;
+        var cg = this.material.color.g + (this.startColor.g-this.endColor.g)*this.colorSpeed;
+        var cb = this.material.color.b + (this.startColor.b-this.endColor.b)*this.colorSpeed;
 
         this.material.color = new THREE.Color(cr,cg,cb);
 
@@ -65,6 +78,11 @@ function Spark() {
 		this.position.set(p.x + this.velVector.x * delta,
 			p.y + this.velVector.y*delta,
 			p.z + this.velVector.z*delta);
+		for(var i=0;i<this.childSparkCounter;i++){
+			var childSpark = scene.getObjectByName(this.name + ":" + i);
+			childSpark.updatePos(grav,delta);
+			childSpark.checkRayCol();
+		}
 		//this.sparkLight.position.set(this.position.x,this.position.y,this.position.z);
 	}
 	Spark.prototype.checkRayCol = function(){
@@ -75,35 +93,72 @@ function Spark() {
 		var rayOrigin=this.position; //+ new THREE.Vector3(0,-0.01,0); //new THREE.Vector3(0,1,0);
 		var rayDir=normalizedVel;
 		//this.rotation.setFromQuaternion(new THREE.Quaternion(normalizedVel.x,normalizedVel.y,normalizedVel.z,0) );
-		this.rotation.setFromVector3(normalizedVel);
-		this.scale.set(0.02 * l, 0.01, 0.01);
+		this.rotation.setFromVector3(rayDir);
+		this.scale.set(0.017 * l * this.blurFactor, 0.01, 0.01);
 		//var rayDir=new THREE.Vector3(0,-1,0);
 
 	    var raycaster = new THREE.Raycaster(rayOrigin,rayDir);
-	    raycaster.far=0.15;
+	    raycaster.far=0.3;
 
 		scene.updateMatrixWorld();
 
 		var intersects = raycaster.intersectObjects(/*collMeshes*/scene.children,true);
 		if(intersects[0]){
-			this.onCollision(intersects[0].face.normal);
+			this.onCollision(intersects[0].face.normal,intersects[0].point);
 		}
 		scene.remove(this.raycaster);
 	}
-	Spark.prototype.onCollision = function(collNor){
+	Spark.prototype.onCollision = function(collNor,collpoint){
 		if(this.maxbounces-- == 0){
 			//scene.remove(this);
 			console.log("Done");
+			return;
 		}
 		var mulConst=-2 * this.velVector.dot(collNor);
 		var dotPart = collNor.multiplyScalar(mulConst);
 		var addPart = dotPart.add(this.velVector);
-		this.velVector = addPart.multiplyScalar(this.elasticity);
+		//this.velVector = new THREE.Vector3(this.velVector.x, this.velVector.y * this.elasticity,this.velVector.z);
+		this.velVector = new THREE.Vector3(this.velVector.x * this.elasticity, this.velVector.y * this.elasticity,this.velVector.z * this.elasticity);
+		if(this.splitCount>0){
+			var angle=0;
+			this.splitCount--;
+			var n=this.noSparkChilds;
+			while(n-- > 0)
+			{
+    			var childSpark = new Spark();
+            	childSpark.name = this.name + ":" +  this.childSparkCounter++;
+            	childSpark.isMoving = true;
+            	childSpark.position.set(collpoint.x,collpoint.y,collpoint.z);
+            	childSpark.scale.set(0.03,0.03,0.03);
+            	childSpark.splitCount = 0;
+            	childSpark.blurFactor = 1.5;
+            	//childSpark.elasticity = 0;
+            	//childSpark.startColor = this.material.color;
+            	//childSpark.lifetime = 0.5;
+            	childSpark.targetDir=new THREE.Vector3(0,0,0);
+            	
+				angle += Math.PI/this.noSparkChilds;
+				childSpark.velVector.applyAxisAngle( collNor.normalize(), angle );
+				childSpark.velVector.set(childSpark.velVector.x * 0.5,
+					childSpark.velVector.y * 0.5,
+					childSpark.velVector.z * 0.5);
+            	//childSpark.velVector.set(-this.velVector.x,this.velVector.y,this.velVector.z);
+
+            	childSpark.velVector.x += (2*Math.random() - 1);
+            	childSpark.velVector.y += (2*Math.random() - 1);
+            	childSpark.velVector.z += (2*Math.random() - 1);
+            
+            	scene.add(childSpark);
+        	}
+		}
+		//scene.remove(this);
+
 	}
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 function SparkGenerator() {
-	this.spread = new THREE.Vector3(2,1,1.7);
-	this.rate = 2;
+	this.spread = new THREE.Vector3(2,0.2,1.7);
+	//this.spread = new THREE.Vector3(0,0,0);
+	//this.rate = 2;
     this.type = 'SparkGenerator';
     this.sparkCounter = 0;
     this.minID = 0;
@@ -173,7 +228,7 @@ function init()
     renderer = new THREE.WebGLRenderer({antialias:true});
     renderer.setSize(WIDTH, HEIGHT);
     // Set the background color of the scene.
-    renderer.setClearColor(0x111111, 1);
+    renderer.setClearColor(0x111111, 0);
     //document.body.appendChild(renderer.domElement); //in case rendering in body
     container.appendChild( renderer.domElement );
 
@@ -230,7 +285,6 @@ function init()
     var generator = new SparkGenerator();
     generator.name = 'generator';
     scene.add(generator);
-    
     generator.position.set(-0.4, 1.17, 0);
     generator.scale.set( 0, 0, 0 );
 
@@ -297,9 +351,9 @@ function postProcess()
     translate(asset, 0,1.5,0);       
     setPositions();
 
-    var gen = scene.getObjectByName("generator");
-    if(Math.random() > 0.1){
-        gen.generateSpark( delta );
+    var gen1 = scene.getObjectByName("generator");
+    if(Math.random() > 0){
+        gen1.generateSpark( delta );
     }
 
 }
@@ -379,7 +433,9 @@ function putTextExt(dividstr, textStr) //does not need init
     text.innerHTML = textStr;
 }
 function setPositions(){
-	scene.getObjectByName("bunny").position.set(-2, 0, -1-0.5);
+	scene.getObjectByName("bunny").position.set(-2, 0, -3);
+	scene.getObjectByName("bunny").rotation.set(0, -12, 0);
+
 	scene.getObjectByName("cube").position.set(-2, -0.4, 0.05-0.5);
 	scene.getObjectByName("cone").position.set(-1.5, 0, 1.4-0.5);
 	scene.getObjectByName("sphere").position.set(-0.2, 0, 0.4-0.5);
@@ -393,10 +449,10 @@ function initlighting(){
     alight.position.set(-100.0, 200.0, 100.0);
     scene.add(alight);
 
-    /*var directionalLight = new THREE.DirectionalLight( 0xffeedd );
+    var directionalLight = new THREE.DirectionalLight( 0xffeedd,0.7 );
                 directionalLight.position.set( 0, 5, 0 );
                 directionalLight.castShadow = true;
-                scene.add( directionalLight );*/
+                scene.add( directionalLight );
     var light1 = new THREE.PointLight( 0xA24444, 0.6, 1000 );
 	light1.position.set( 1, 5, -0.3 );
 	scene.add( light1 );
@@ -406,7 +462,7 @@ function initlighting(){
 	scene.add( light2 );
 	// white spotlight shining from the side, casting shadow
 
-	var spotLight = new THREE.SpotLight( 0xffffff,0.2 );
+	var spotLight = new THREE.SpotLight( 0xffffff,0.4 );
 	spotLight.position.set( 3, 3, -3 );
 
 	spotLight.castShadow = true;
