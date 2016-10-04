@@ -19,11 +19,11 @@ function Spark() {
 	this.colorSpeed = -0.025;
 	this.splitCount = 1;
 	this.childSparkCounter = 0;
-	this.noSparkChilds=2;
-	this.blurFactor = 1.2;
+	this.noSparkChilds=3;
+	this.blurFactor = 1.4;
 	this.targetDir = new THREE.Vector3(1,0,0);
 
-    this.velVector = new THREE.Vector3(-3.5, 5, 0);
+    this.velVector = new THREE.Vector3(-5, 5, 0);
 
     this.type = 'Spark';
     this.creationTime = 0;
@@ -109,8 +109,10 @@ function Spark() {
 		scene.remove(this.raycaster);
 	}
 	Spark.prototype.onCollision = function(collNor,collpoint){
-		if(this.maxbounces-- == 0){
+		if(this.maxbounces-- < 0){
 			//scene.remove(this);
+			//this.material.color = new THREE.Color(0,0,0);
+			 this.visible = false;
 			console.log("Done");
 			return;
 		}
@@ -133,7 +135,7 @@ function Spark() {
             	childSpark.splitCount = 0;
             	childSpark.blurFactor = 1.5;
             	//childSpark.elasticity = 0;
-            	//childSpark.startColor = this.material.color;
+            	childSpark.startColor = new THREE.Color(this.material.color.r,this.material.color.g,this.material.color.b);
             	//childSpark.lifetime = 0.5;
             	childSpark.targetDir=new THREE.Vector3(0,0,0);
             	
@@ -257,19 +259,22 @@ function init()
     var sawBlade_objPath = 'assets/sawblade.obj';
     OBJMesh(sawBlade_objPath, sawBlade_texPath, "sawblade");
 
-    var ground_texPath = 'assets/ground_tile.jpg';
-    var ground_objPath = 'assets/ground.obj';
+    //var ground_texPath = 'assets/ground_tile.jpg';
+    var ground_texPath = 'assets/ground_tile_1.png';
+    var ground_objPath = 'assets/ground1.obj';
     OBJMesh(ground_objPath, ground_texPath, "ground");
     //collMeshes.push( scene.getObjectByName("ground") );
 
-    var slab_texPath = 'assets/slab.jpg';
-    var slab_objPath = 'assets/slab.obj';
+    //var slab_texPath = 'assets/slab.jpg';
+	var slab_texPath = 'assets/BakeAtlas.jpg';
+    var slab_objPath = 'assets/slab1.obj';
     OBJMesh(slab_objPath, slab_texPath, "slab");
     //collMeshes.push( scene.getObjectByName("slab") );
     
      //Stanford Bunny
-    var bunny_texPath = 'assets/rocky.jpg';
-    var bunny_objPath = 'assets/stanford_bunny.obj';
+    //var bunny_texPath = 'assets/rocky.jpg';
+    var bunny_texPath = 'assets/BakeAtlas.jpg';
+    var bunny_objPath = 'assets/stanford_bunny1.obj';
     OBJMesh(bunny_objPath, bunny_texPath, "bunny");
     //collMeshes.push( scene.getObjectByName("bunny") );
     
@@ -277,8 +282,9 @@ function init()
 	var sceneObjects=[scene];
 
     //Sphere
-    var sphere_texPath = 'assets/rocky.jpg';
-    var sphere_objPath = 'assets/sphere.obj';
+    //var sphere_texPath = 'assets/rocky.jpg';
+    var sphere_texPath = 'assets/BakeAtlas.jpg';
+    var sphere_objPath = 'assets/sphere1.obj';
     OBJMesh(sphere_objPath, sphere_texPath, "sphere");
 
     // Generator
@@ -289,13 +295,15 @@ function init()
     generator.scale.set( 0, 0, 0 );
 
      //Cube
-    var cube_texPath = 'assets/rocky.jpg';
-    var cube_objPath = 'assets/cube.obj';
+    //var cube_texPath = 'assets/rocky.jpg';
+    var cube_texPath = 'assets/BakeAtlas.jpg';
+    var cube_objPath = 'assets/cube1.obj';
     OBJMesh(cube_objPath, cube_texPath, "cube");
     
     //Cone
-    var cone_texPath = 'assets/rocky.jpg';
-    var cone_objPath = 'assets/cone.obj';
+    //var cone_texPath = 'assets/rocky.jpg';
+    var cone_texPath = 'assets/BakeAtlas.jpg';
+    var cone_objPath = 'assets/cone1.obj';
     OBJMesh(cone_objPath, cone_texPath, "cone");
     
     
@@ -349,7 +357,7 @@ function postProcess()
     translate(asset, 0,-1.5,0);
     rotate(asset, new THREE.Vector3(0,0,1), -9* delta); //rotate sawblade
     translate(asset, 0,1.5,0);       
-    setPositions();
+    //setPositions();
 
     var gen1 = scene.getObjectByName("generator");
     if(Math.random() > 0){
@@ -370,11 +378,10 @@ function OBJMesh(objpath, texpath, objName/*, objStartPos*/)
                 {
                     if(child instanceof THREE.Mesh)
                     {
-                    	child.material = new THREE.MeshPhongMaterial( { color: 0xffffff, shading: THREE.FlatShading } );
+                    	//child.material = new THREE.MeshPhongMaterial( { color: 0xffffff, shading: THREE.FlatShading } );
+                    	child.material = new THREE.MeshBasicMaterial( { color: 0xffffff, shading: THREE.SmoothShading } );
                         child.material.map = texture;
                         child.material.needsUpdate = true;
-                        child.recieveshadow=true;
-                        child.castShadow=true;
                         //sceneObjects.push(child.object );
                     }
     				//child.material=new THREE.MeshPhongMaterial( { color: 0xffffff, shading: THREE.SmoothShading } );
@@ -384,12 +391,8 @@ function OBJMesh(objpath, texpath, objName/*, objStartPos*/)
             object.name = objName;
             
             if(objName=="sawblade")
-            	object.material=new THREE.MeshPhongMaterial( { color: 0xffffff, shading: THREE.SmoothShading } );
-            if(objName=="ground"){
-            	object.recieveshadow=true;
-            	object.castShadow=false;
-            }
-    
+            	object.material=new THREE.MeshPhongMaterial( { color: 0xffffff, shading: THREE.FlatShading } );
+
             scene.add( object );
             onLoad( object );
             
