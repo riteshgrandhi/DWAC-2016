@@ -19,7 +19,7 @@ function Spark() {
 	this.splitCount = 1;
 	this.childSparkCounter = 0;
 	this.noSparkChilds=3;
-	this.blurFactor = 1.4;
+	this.blurFactor = 1;
 	this.targetDir = new THREE.Vector3(1,0,0);
 	//this.targetDir = new THREE.Vector3(0,0,4);
 
@@ -32,8 +32,12 @@ function Spark() {
     //this.endColor = new THREE.Color(0.929,0.541,0.361);
     this.endColor = new THREE.Color(0.996,0.803,0.675);
 
-    this.geometry = new THREE.SphereGeometry( 0.5 , 4, 3 );
-    //this.geometry = new THREE.CylinderGeometry( 0.5, 0.5, 0.2, 5 );
+    //this.geometry = new THREE.SphereGeometry( 0.5 , 4, 4 );
+    this.geometry = new THREE.CylinderGeometry( 0.5, 0.5, 0.2, 5 );
+    //this.geometry = scene.getObjectByName("spark").clone();
+	/*var spark_objPath = 'assets/spark.obj';
+    OBJMesh(spark_objPath, "", "spark");*/
+
     this.material = new THREE.MeshBasicMaterial( { color: "rgb(255, 239, 224)" } );
     THREE.Mesh.call( this, this.geometry, this.material );
     /*this.isGoingUp = false;
@@ -89,16 +93,18 @@ function Spark() {
 		var normalizedVel= new THREE.Vector3( this.velVector.x/l, this.velVector.y/l, this.velVector.z/l);
 		var rayOrigin=this.position; //+ new THREE.Vector3(0,-0.01,0); //new THREE.Vector3(0,1,0);
 		var rayDir=normalizedVel;
-		//this.rotation.setFromQuaternion(new THREE.Quaternion(normalizedVel.x,normalizedVel.y,normalizedVel.z,0) );
-		this.scale.set(0.015 * l * this.blurFactor, 0.01, 0.01);
-		this.rotation.setFromVector3(rayDir);
+		this.scale.set(0.015, 0.07, 0.013 * l * this.blurFactor);
+
+		var pos = new THREE.Vector3();
+		pos.addVectors(rayDir, this.position);
+		this.lookAt(pos);
 		
 	    var raycaster = new THREE.Raycaster(rayOrigin,rayDir);
 	    raycaster.far=0.2;
 
 		scene.updateMatrixWorld();
 
-		var intersects = raycaster.intersectObjects(/*collMeshes*/scene.children,true);
+		var intersects = raycaster.intersectObjects(scene.children,true);
 		if(intersects[0]){
 			this.onCollision(intersects[0].face.normal,intersects[0].point);
 		}
@@ -132,7 +138,7 @@ function Spark() {
             	childSpark.position.set(collpoint.x,collpoint.y,collpoint.z);
             	childSpark.scale.set(0.03,0.03,0.03);
             	childSpark.splitCount = 0;
-            	childSpark.blurFactor = 1.5;
+            	childSpark.blurFactor = 0.7;
             	childSpark.colorSpeed = -0.05;
             	//childSpark.elasticity = 0.1;
             	childSpark.material.color = new THREE.Color(this.material.color.r,this.material.color.g,this.material.color.b);
@@ -282,8 +288,8 @@ function init()
     OBJMesh(bunny_objPath, bunny_texPath, "bunny");
     //collMeshes.push( scene.getObjectByName("bunny") );
     
-    //objects Array
-	//var sceneObjects=[scene];
+    /*var spark_objPath = 'assets/spark.obj';
+    OBJMesh(spark_objPath, "", "spark");*/
 
     //Sphere
     //var sphere_texPath = 'assets/rocky.jpg';
