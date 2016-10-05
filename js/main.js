@@ -5,30 +5,31 @@ var bbox;
 //Master Gravity
 var gravity = -25;
 //timeScale
-var timeScale = 0.9;
+var timeScale = 0.95;
 // Transfer global variables
 var i_share = 0, n_share = 1, i_delta = 0.0;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 function Spark() {
-	this.lifetime = 2;
+	this.lifetime = 2.5;
 	this.age = 0;
 	this.elasticity = 0.2;
 	this.maxbounces = 4;
-	this.colorSpeed = -0.015;
+	this.colorSpeed = -0.02;
 	this.splitCount = 1;
 	this.childSparkCounter = 0;
 	this.noSparkChilds=3;
 	this.blurFactor = 1.4;
 	this.targetDir = new THREE.Vector3(1,0,0);
 
-    this.velVector = new THREE.Vector3(-4.5, 5, 0);
+    this.velVector = new THREE.Vector3(-3.7, 6, 0);
 
     this.type = 'Spark';
     this.creationTime = 0;
 
     this.startColor = new THREE.Color(1,0.937,0.878);
-    this.endColor = new THREE.Color(0.929,0.541,0.361);
+    //this.endColor = new THREE.Color(0.929,0.541,0.361);
+    this.endColor = new THREE.Color(0.996,0.803,0.675);
 
     this.geometry = new THREE.SphereGeometry( 0.5 , 4, 3 );
     //this.geometry = new THREE.CylinderGeometry( 0.5, 0.5, 0.2, 5 );
@@ -137,9 +138,9 @@ function Spark() {
             	
 				angle += Math.PI/this.noSparkChilds;
 				childSpark.velVector.applyAxisAngle( collNor.normalize(), angle );
-				childSpark.velVector.set(childSpark.velVector.x * 0.5,
-					childSpark.velVector.y * 0.5,
-					childSpark.velVector.z * 0.5);
+				childSpark.velVector.set(childSpark.velVector.x * 0.6,
+					childSpark.velVector.y * 0.6,
+					childSpark.velVector.z * 0.6);
             	//childSpark.velVector.set(-this.velVector.x,this.velVector.y,this.velVector.z);
 
             	childSpark.velVector.x += (2*Math.random() - 1);
@@ -154,7 +155,7 @@ function Spark() {
 	}
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 function SparkGenerator() {
-	this.spread = new THREE.Vector3(2,0.2,1.7);
+	this.spread = new THREE.Vector3(1.5,0.2,1.8);
 	//this.spread = new THREE.Vector3(0,0,0);
 	this.rate = 1;
     this.type = 'SparkGenerator';
@@ -290,7 +291,7 @@ function init()
     // Generator
     var gen1 = new SparkGenerator();
     gen1.name = 'generator1';
-    gen1.position.set(-0.4, 1.17, 0);
+    gen1.position.set(-0.4, 1.15, 0);
     gen1.scale.set( 0, 0, 0 );
     scene.add(gen1);
 
@@ -301,7 +302,7 @@ function init()
     gen2.rate=0.6;
     gen2.spread = new THREE.Vector3(1,1,3);
     scene.add(gen2);*/
-    
+
      //Cube
     //var cube_texPath = 'assets/rocky.jpg';
     var cube_texPath = 'assets/BakeAtlas.jpg';
@@ -483,7 +484,7 @@ function initlighting(){
 	scene.add( light2 );
 	// white spotlight shining from the side, casting shadow
 
-	var spotLight = new THREE.SpotLight( 0xffffff,0.6 );
+	var spotLight = new THREE.SpotLight( 0xffffff,0.5 );
 	spotLight.position.set( 3, 3, 3 );
 
 	//spotLight.castShadow = true;
