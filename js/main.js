@@ -13,14 +13,15 @@ var i_share = 0, n_share = 1, i_delta = 0.0;
 function Spark() {
 	this.lifetime = 2.5;
 	this.age = 0;
-	this.elasticity = 0.2;
+	this.elasticity = 0.6;
 	this.maxbounces = 4;
-	this.colorSpeed = -0.02;
+	this.colorSpeed = -0.04;
 	this.splitCount = 1;
 	this.childSparkCounter = 0;
 	this.noSparkChilds=3;
 	this.blurFactor = 1.4;
 	this.targetDir = new THREE.Vector3(1,0,0);
+	//this.targetDir = new THREE.Vector3(0,0,4);
 
     this.velVector = new THREE.Vector3(-3.7, 6, 0);
 
@@ -89,12 +90,11 @@ function Spark() {
 		var rayOrigin=this.position; //+ new THREE.Vector3(0,-0.01,0); //new THREE.Vector3(0,1,0);
 		var rayDir=normalizedVel;
 		//this.rotation.setFromQuaternion(new THREE.Quaternion(normalizedVel.x,normalizedVel.y,normalizedVel.z,0) );
+		this.scale.set(0.015 * l * this.blurFactor, 0.01, 0.01);
 		this.rotation.setFromVector3(rayDir);
-		this.scale.set(0.017 * l * this.blurFactor, 0.01, 0.01);
-		//var rayDir=new THREE.Vector3(0,-1,0);
-
+		
 	    var raycaster = new THREE.Raycaster(rayOrigin,rayDir);
-	    raycaster.far=0.3;
+	    raycaster.far=0.2;
 
 		scene.updateMatrixWorld();
 
@@ -116,7 +116,10 @@ function Spark() {
 		var dotPart = collNor.multiplyScalar(mulConst);
 		var addPart = dotPart.add(this.velVector);
 		//this.velVector = new THREE.Vector3(this.velVector.x, this.velVector.y * this.elasticity,this.velVector.z);
+		this.velVector = addPart;
 		this.velVector = new THREE.Vector3(this.velVector.x * this.elasticity, this.velVector.y * this.elasticity,this.velVector.z * this.elasticity);
+		//this.velVector = new THREE.Vector3(this.velVector.x, this.velVector.y ,this.velVector.z);
+		
 		if(this.splitCount>0){
 			var angle=0;
 			this.splitCount--;
@@ -131,7 +134,7 @@ function Spark() {
             	childSpark.splitCount = 0;
             	childSpark.blurFactor = 1.5;
             	childSpark.colorSpeed = -0.05;
-            	//childSpark.elasticity = 0;
+            	//childSpark.elasticity = 0.1;
             	childSpark.material.color = new THREE.Color(this.material.color.r,this.material.color.g,this.material.color.b);
             	//childSpark.lifetime = 0.5;
             	childSpark.targetDir=new THREE.Vector3(0,0,0);
@@ -156,7 +159,7 @@ function Spark() {
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 function SparkGenerator() {
 	this.spread = new THREE.Vector3(1.5,0.2,1.8);
-	//this.spread = new THREE.Vector3(0,0,0);
+	//this.spread = new THREE.Vector3(0.3,0.3,0.3);
 	this.rate = 1;
     this.type = 'SparkGenerator';
     this.sparkCounter = 0;
