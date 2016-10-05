@@ -4,26 +4,25 @@ var scene, camera, renderer, container, loadingManager;
 var bbox;
 //Master Gravity
 var gravity = -25;
-
-//var collMeshes = [];
+//timeScale
+var timeScale = 0.9;
 // Transfer global variables
 var i_share = 0, n_share = 1, i_delta = 0.0;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
-// class for spark object - preliminary , needs a lot of changes
 function Spark() {
 	this.lifetime = 2;
 	this.age = 0;
 	this.elasticity = 0.2;
 	this.maxbounces = 4;
-	this.colorSpeed = -0.025;
+	this.colorSpeed = -0.015;
 	this.splitCount = 1;
 	this.childSparkCounter = 0;
 	this.noSparkChilds=3;
 	this.blurFactor = 1.4;
 	this.targetDir = new THREE.Vector3(1,0,0);
 
-    this.velVector = new THREE.Vector3(-5, 5, 0);
+    this.velVector = new THREE.Vector3(-4.5, 5, 0);
 
     this.type = 'Spark';
     this.creationTime = 0;
@@ -31,10 +30,7 @@ function Spark() {
     this.startColor = new THREE.Color(1,0.937,0.878);
     this.endColor = new THREE.Color(0.929,0.541,0.361);
 
-    /*this.sparkLight = new THREE.PointLight( 0xffffff, 10, 1);
-	scene.add( this.sparkLight );*/
-
-    this.geometry = new THREE.SphereGeometry( 0.5 , 5, 3 );
+    this.geometry = new THREE.SphereGeometry( 0.5 , 4, 3 );
     //this.geometry = new THREE.CylinderGeometry( 0.5, 0.5, 0.2, 5 );
     this.material = new THREE.MeshBasicMaterial( { color: "rgb(255, 239, 224)" } );
     THREE.Mesh.call( this, this.geometry, this.material );
@@ -83,7 +79,6 @@ function Spark() {
 			childSpark.updatePos(grav,delta);
 			childSpark.checkRayCol();
 		}
-		//this.sparkLight.position.set(this.position.x,this.position.y,this.position.z);
 	}
 	Spark.prototype.checkRayCol = function(){
 		
@@ -112,8 +107,8 @@ function Spark() {
 		if(this.maxbounces-- < 0){
 			//scene.remove(this);
 			//this.material.color = new THREE.Color(0,0,0);
-			 this.visible = false;
-			console.log("Done");
+			this.visible = false;
+			//console.log("Done");
 			return;
 		}
 		var mulConst=-2 * this.velVector.dot(collNor);
@@ -134,8 +129,9 @@ function Spark() {
             	childSpark.scale.set(0.03,0.03,0.03);
             	childSpark.splitCount = 0;
             	childSpark.blurFactor = 1.5;
+            	childSpark.colorSpeed = -0.05;
             	//childSpark.elasticity = 0;
-            	childSpark.startColor = new THREE.Color(this.material.color.r,this.material.color.g,this.material.color.b);
+            	childSpark.material.color = new THREE.Color(this.material.color.r,this.material.color.g,this.material.color.b);
             	//childSpark.lifetime = 0.5;
             	childSpark.targetDir=new THREE.Vector3(0,0,0);
             	
@@ -160,7 +156,7 @@ function Spark() {
 function SparkGenerator() {
 	this.spread = new THREE.Vector3(2,0.2,1.7);
 	//this.spread = new THREE.Vector3(0,0,0);
-	//this.rate = 2;
+	this.rate = 1;
     this.type = 'SparkGenerator';
     this.sparkCounter = 0;
     this.minID = 0;
@@ -169,12 +165,12 @@ function SparkGenerator() {
     this.material = new THREE.MeshBasicMaterial( { color: 0x000000 } );
     THREE.Mesh.call( this, this.geometry, this.material);
 
-    this.generateSpark = function(/*orientation,*/delta) {
+    this.generateSpark = function() {
 
             var newSpark = new Spark();
-            newSpark.name = 'newSpark' + this.sparkCounter++;
+            newSpark.name = this.name+this.sparkCounter++;
             newSpark.isMoving = true;
-            
+            //console.log(newSpark.name);
             newSpark.velVector.x += this.spread.x * (2*Math.random() - 1);
             newSpark.velVector.y += this.spread.y * (2*Math.random() - 1);
             newSpark.velVector.z += this.spread.z * (2*Math.random() - 1);
@@ -187,8 +183,12 @@ function SparkGenerator() {
             newSpark.position.set(position.x, position.y, position.z);
             //newSpark.scale.set( 0.2, 0.01, 0.01 );
 
-            for (var i = this.minID; i < this.sparkCounter; i++) {
-                var ball = scene.getObjectByName('newSpark' + i);
+            
+    };
+    this.sparkGenUpdater = function(delta){
+    		for (var i = this.minID; i < this.sparkCounter; i++) {
+                var ball = scene.getObjectByName(this.name+i);
+                //console.log(ball);
                 if(!ball){
                     this.minID = i;
                     continue;
@@ -196,7 +196,7 @@ function SparkGenerator() {
                 ball.updatePos(gravity,delta);
                 ball.checkRayCol();
             }
-    };
+    }
 
 }
 SparkGenerator.prototype = Object.create( THREE.Mesh.prototype );
@@ -245,10 +245,10 @@ function init()
     window.addEventListener('resize',
         function ()
         {
-            // var WIDTH = window.innerWidth, HEIGHT = window.innerHeight;
-            // renderer.setSize(WIDTH, HEIGHT);
-            // camera.aspect = WIDTH / HEIGHT;
-            // camera.updateProjectionMatrix();
+             var WIDTH = window.innerWidth, HEIGHT = window.innerHeight;
+             renderer.setSize(WIDTH, HEIGHT);
+             camera.aspect = WIDTH / HEIGHT;
+             camera.updateProjectionMatrix();
         }
     );
  	
@@ -279,7 +279,7 @@ function init()
     //collMeshes.push( scene.getObjectByName("bunny") );
     
     //objects Array
-	var sceneObjects=[scene];
+	//var sceneObjects=[scene];
 
     //Sphere
     //var sphere_texPath = 'assets/rocky.jpg';
@@ -288,12 +288,20 @@ function init()
     OBJMesh(sphere_objPath, sphere_texPath, "sphere");
 
     // Generator
-    var generator = new SparkGenerator();
-    generator.name = 'generator';
-    scene.add(generator);
-    generator.position.set(-0.4, 1.17, 0);
-    generator.scale.set( 0, 0, 0 );
+    var gen1 = new SparkGenerator();
+    gen1.name = 'generator1';
+    gen1.position.set(-0.4, 1.17, 0);
+    gen1.scale.set( 0, 0, 0 );
+    scene.add(gen1);
 
+    /*var gen2 = new SparkGenerator();
+    gen2.name = 'generator2';
+    gen2.position.set(-0.4, 1.17, 0);
+    gen2.scale.set( 0, 0, 0 );
+    gen2.rate=0.6;
+    gen2.spread = new THREE.Vector3(1,1,3);
+    scene.add(gen2);*/
+    
      //Cube
     //var cube_texPath = 'assets/rocky.jpg';
     var cube_texPath = 'assets/BakeAtlas.jpg';
@@ -305,7 +313,6 @@ function init()
     var cone_texPath = 'assets/BakeAtlas.jpg';
     var cone_objPath = 'assets/cone1.obj';
     OBJMesh(cone_objPath, cone_texPath, "cone");
-    
     
     // Add OrbitControls so that we can pan around with the mouse.
     controls = new THREE.OrbitControls(camera, renderer.domElement);
@@ -353,16 +360,26 @@ function postProcess()
     
     var delta = clock.getDelta();
     var asset = scene.getObjectByName( "sawblade" );
+    delta*=timeScale;
 
     translate(asset, 0,-1.5,0);
     rotate(asset, new THREE.Vector3(0,0,1), -9* delta); //rotate sawblade
     translate(asset, 0,1.5,0);       
-    //setPositions();
+    
+    var gen1 = scene.getObjectByName("generator1");
 
-    var gen1 = scene.getObjectByName("generator");
-    if(Math.random() > 0){
-        gen1.generateSpark( delta );
-    }
+    if(Math.random()>(1-gen1.rate)){
+    	gen1.generateSpark();
+	}
+
+	gen1.sparkGenUpdater(delta);
+
+   	/*var gen2 = scene.getObjectByName("generator2");
+    if(Math.random()>(1-gen2.rate)){
+    	gen2.generateSpark();
+	}
+
+	gen2.sparkGenUpdater(delta);*/
 
 }
 
@@ -379,8 +396,13 @@ function OBJMesh(objpath, texpath, objName/*, objStartPos*/)
                     if(child instanceof THREE.Mesh)
                     {
                     	//child.material = new THREE.MeshPhongMaterial( { color: 0xffffff, shading: THREE.FlatShading } );
-                    	child.material = new THREE.MeshBasicMaterial( { color: 0xffffff, shading: THREE.SmoothShading } );
-                        child.material.map = texture;
+                    	if(objName!="sawblade"){
+                    		child.material = new THREE.MeshBasicMaterial( { color: 0xffffff, shading: THREE.SmoothShading } );
+                        	
+                    	}else{
+                    		child.material = new THREE.MeshPhongMaterial( { color: 0xffffff, shading: THREE.SmoothShading } );
+                    	}
+                    	child.material.map = texture;
                         child.material.needsUpdate = true;
                         //sceneObjects.push(child.object );
                     }
@@ -390,8 +412,13 @@ function OBJMesh(objpath, texpath, objName/*, objStartPos*/)
 
             object.name = objName;
             
-            if(objName=="sawblade")
-            	object.material=new THREE.MeshPhongMaterial( { color: 0xffffff, shading: THREE.FlatShading } );
+            /*if(objName=="sawblade")
+            {
+            	object.material=new THREE.MeshLambertMaterial( { color: 0xffffff, shading: THREE.SmoothShading } );
+            	console.log(object.name);
+            	object.castShadow=true;
+            	object.recieveShadow=true;
+            }*/
 
             scene.add( object );
             onLoad( object );
@@ -425,6 +452,7 @@ function onError( xhr )
 function putText( divid, textStr, x, y )
 {
     var text = document.getElementById("avatar_ftxt" + divid);
+    //var text = document.getElementById("info");
     text.innerHTML = textStr;
     text.style.left = x + 'px';
     text.style.top  = y + 'px';
@@ -435,17 +463,7 @@ function putTextExt(dividstr, textStr) //does not need init
     var text = document.getElementById(dividstr);
     text.innerHTML = textStr;
 }
-function setPositions(){
-	scene.getObjectByName("bunny").position.set(-2, 0, -3);
-	scene.getObjectByName("bunny").rotation.set(0, -12, 0);
 
-	scene.getObjectByName("cube").position.set(-2, -0.4, 0.05-0.5);
-	scene.getObjectByName("cone").position.set(-1.5, 0, 1.4-0.5);
-	scene.getObjectByName("sphere").position.set(-0.2, 0, 0.4-0.5);
-
-	/*var con = scene.getObjectByName("cone");
-    directionalLight.target.position.set(con.position.x,con.position.y,con.position.z);*/
-}
 function initlighting(){
 	// Create a light, set its position, and add it to the scene.
     var alight = new THREE.AmbientLight(0x111111);
@@ -457,7 +475,7 @@ function initlighting(){
                 directionalLight.castShadow = true;
                 scene.add( directionalLight );
     var light1 = new THREE.PointLight( 0xA24444, 0.6, 1000 );
-	light1.position.set( 1, 5, -0.3 );
+	light1.position.set( 5, 3, -0.3 );
 	scene.add( light1 );
 
 	var light2 = new THREE.PointLight( 0x4444A2, 0.25, 500 );
@@ -465,10 +483,10 @@ function initlighting(){
 	scene.add( light2 );
 	// white spotlight shining from the side, casting shadow
 
-	var spotLight = new THREE.SpotLight( 0xffffff,0.4 );
-	spotLight.position.set( 3, 3, -3 );
+	var spotLight = new THREE.SpotLight( 0xffffff,0.6 );
+	spotLight.position.set( 3, 3, 3 );
 
-	spotLight.castShadow = true;
+	//spotLight.castShadow = true;
 
 	spotLight.shadow.mapSize.width = 1024;
 	spotLight.shadow.mapSize.height = 1024;
