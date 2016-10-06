@@ -19,7 +19,7 @@ function Spark() {
 	this.splitCount = 1;
 	this.childSparkCounter = 0;
 	this.noSparkChilds=3;
-	this.blurFactor = 1;
+	this.blurFactor = 1.2;
 	this.targetDir = new THREE.Vector3(1,0,0);
 	//this.targetDir = new THREE.Vector3(0,0,4);
 
@@ -34,9 +34,8 @@ function Spark() {
 
     //this.geometry = new THREE.SphereGeometry( 0.5 , 4, 4 );
     this.geometry = new THREE.CylinderGeometry( 0.5, 0.5, 0.2, 5 );
-    //this.geometry = scene.getObjectByName("spark").clone();
-	/*var spark_objPath = 'assets/spark.obj';
-    OBJMesh(spark_objPath, "", "spark");*/
+    //this.geometry = new THREE.BoxGeometry( 0.7,0.2,1 );
+
 
     this.material = new THREE.MeshBasicMaterial( { color: "rgb(255, 239, 224)" } );
     THREE.Mesh.call( this, this.geometry, this.material );
